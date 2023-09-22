@@ -46,6 +46,18 @@ module RubyIndexer
 
         name = fully_qualify_name(node.target.location.slice)
         add_constant(node, name)
+      when YARP::MultiWriteNode
+        value = node.value
+        values = value.is_a?(YARP::ArrayNode) ? value.elements : [value]
+
+        node.targets.each_with_index do |target, i|
+          case target
+          when YARP::ConstantTargetNode
+            add_constant(target, fully_qualify_name(target.name.to_s), values[i])
+          when YARP::ConstantPathTargetNode
+            add_constant(target, fully_qualify_name(target.slice), values[i])
+          end
+        end
       when YARP::CallNode
         message = node.message
         handle_private_constant(node) if message == "private_constant"
@@ -94,12 +106,15 @@ module RubyIndexer
           YARP::ConstantPathOrWriteNode,
           YARP::ConstantPathOperatorWriteNode,
           YARP::ConstantPathAndWriteNode,
+          YARP::ConstantTargetNode,
+          YARP::ConstantPathTargetNode,
         ),
         name: String,
+        value: T.nilable(YARP::Node),
       ).void
     end
-    def add_constant(node, name)
-      value = node.value
+    def add_constant(node, name, value = nil)
+      value = node.value unless node.is_a?(YARP::ConstantTargetNode) || node.is_a?(YARP::ConstantPathTargetNode)
       comments = collect_comments(node)
 
       @index << case value
