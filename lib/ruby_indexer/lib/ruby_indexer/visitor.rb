@@ -49,6 +49,8 @@ module RubyIndexer
       when YARP::CallNode
         message = node.message
         handle_private_constant(node) if message == "private_constant"
+      when YARP::DefNode
+        add_method(node)
       end
     end
 
@@ -120,6 +122,13 @@ module RubyIndexer
       else
         Index::Entry::Constant.new(name, @file_path, node.location, comments)
       end
+    end
+
+    sig { params(node: YARP::DefNode).void }
+    def add_method(node)
+      method_name = node.name.to_s
+      comments = collect_comments(node)
+      @index << Index::Entry::Method.new(method_name, @file_path, node.location, comments, node.parameters)
     end
 
     sig { params(node: T.any(YARP::ClassNode, YARP::ModuleNode), klass: T.class_of(Index::Entry)).void }

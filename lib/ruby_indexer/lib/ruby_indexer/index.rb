@@ -274,6 +274,52 @@ module RubyIndexer
       class Constant < Entry
       end
 
+      class Method < Entry
+        extend T::Sig
+
+        sig { returns(T::Array[Symbol]) }
+        attr_reader :parameters
+
+        sig do
+          params(
+            name: String,
+            file_path: String,
+            location: YARP::Location,
+            comments: T::Array[String],
+            parameters_node: YARP::ParametersNode,
+          ).void
+        end
+        def initialize(name, file_path, location, comments, parameters_node)
+          super(name, file_path, location, comments)
+          @parameters = T.let(list_params(parameters_node), T::Array[Symbol])
+          @arity = T.let(arity(parameters_node), T::Range[Integer])
+        end
+
+        sig { params(n: Integer).returns(T::Boolean) }
+        def accepts_arity?(n)
+          @arity.cover?(n)
+        end
+
+        private
+
+        sig { params(parameters_node: YARP::ParametersNode).returns(T::Range[Integer]) }
+        def arity(parameters_node)
+          optional_keywords, required_keywords = parameters_node.keywords.partition(&:value)
+          minimum_params = parameters_node.requireds.length + parameters_node.posts.length + required_keywords.length
+          maximum_params = if parameters_node.rest || parameters_node.keyword_rest
+            Float::INFINITY
+          else
+            minimum_params + parameters_node.optionals.length + optional_keywords.length
+          end
+          minimum_params..maximum_params
+        end
+
+        sig { params(parameters_node: YARP::ParametersNode).returns(T::Array[Symbol]) }
+        def list_params(parameters_node)
+          parameters_node.requireds.map(&:name)
+        end
+      end
+
       # An UnresolvedAlias points to a constant alias with a right hand side that has not yet been resolved. For
       # example, if we find
       #
