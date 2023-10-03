@@ -292,13 +292,17 @@ module RubyIndexer
             file_path: String,
             location: YARP::Location,
             comments: T::Array[String],
-            parameters_node: YARP::ParametersNode,
+            parameters_node: T.nilable(YARP::ParametersNode),
           ).void
         end
         def initialize(name, file_path, location, comments, parameters_node)
           super(name, file_path, location, comments)
-          @parameters = T.let(list_params(parameters_node), T::Array[Symbol])
-          @arity = T.let(arity(parameters_node), T::Range[Integer])
+          if parameters_node
+            @parameters = T.let(list_params(parameters_node), T::Array[Symbol])
+            @arity = T.let(arity(parameters_node), T::Range[Integer])
+          else
+            @arity = 0
+          end
         end
 
         sig { params(n: Integer).returns(T::Boolean) }
@@ -322,7 +326,13 @@ module RubyIndexer
 
         sig { params(parameters_node: YARP::ParametersNode).returns(T::Array[Symbol]) }
         def list_params(parameters_node)
-          parameters_node.requireds.map(&:name)
+          result = parameters_node.requireds.map(&:name) + parameters_node.optionals.map(&:name)
+          result += parameters_node.posts.map(&:name) if parameters_node.posts
+          result += parameters_node.keywords.map(&:name) if parameters_node.keywords
+          result << T.must(parameters_node.rest).name if parameters_node.rest
+          result << T.must(parameters_node.keyword_rest).name if parameters_node.keyword_rest
+          result << T.must(parameters_node.block).name if parameters_node.block
+          result
         end
       end
 
