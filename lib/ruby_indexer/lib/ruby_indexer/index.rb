@@ -298,8 +298,9 @@ module RubyIndexer
         def initialize(name, file_path, location, comments, parameters_node)
           super(name, file_path, location, comments)
           if parameters_node
-            @parameters = T.let(list_params(parameters_node), T::Array[Symbol])
-            @arity = T.let(arity(parameters_node), T::Range[T.any(Float, Integer)])
+            @parameters_node = parameters_node
+            @parameters = T.let(list_params, T::Array[Symbol])
+            @arity = T.let(arity, T::Range[T.any(Float, Integer)])
           else
             @arity = 0..0
           end
@@ -312,8 +313,10 @@ module RubyIndexer
 
         private
 
-        sig { params(parameters_node: YARP::ParametersNode).returns(T::Range[T.any(Float, Integer)]) }
-        def arity(parameters_node)
+        attr_reader :parameters_node
+
+        sig { returns(T::Range[T.any(Float, Integer)]) }
+        def arity
           optional_keywords, required_keywords = parameters_node.keywords.partition(&:value)
           minimum_params = parameters_node.requireds.length + parameters_node.posts.length + required_keywords.length
           maximum_params = if parameters_node.rest || parameters_node.keyword_rest
@@ -324,8 +327,8 @@ module RubyIndexer
           minimum_params..maximum_params
         end
 
-        sig { params(parameters_node: YARP::ParametersNode).returns(T::Array[Symbol]) }
-        def list_params(parameters_node)
+        sig { returns(T::Array[Symbol]) }
+        def list_params
           result = parameters_node.requireds.map do |r|
             case r
             when YARP::RequiredDestructuredParameterNode
