@@ -326,8 +326,25 @@ module RubyIndexer
 
         sig { params(parameters_node: YARP::ParametersNode).returns(T::Array[Symbol]) }
         def list_params(parameters_node)
-          result = parameters_node.requireds.map(&:name) + parameters_node.optionals.map(&:name)
-          result += parameters_node.posts.map(&:name) if parameters_node.posts
+          result = parameters_node.requireds.map do |r|
+            case r
+            when YARP::RequiredDestructuredParameterNode
+              # TODO
+            else
+              r.name
+            end
+          end
+          result += parameters_node.optionals.map(&:name)
+          if parameters_node.posts
+            result += parameters_node.posts.map do |p|
+              case p
+              when YARP::RequiredDestructuredParameterNode
+                # TODO
+              else
+                p.name
+              end
+            end
+          end
           result += parameters_node.keywords.map(&:name) if parameters_node.keywords
           result << T.must(T.must(parameters_node.rest).name) if parameters_node.rest&.name
           case parameters_node.keyword_rest
@@ -340,7 +357,15 @@ module RubyIndexer
               result << T.must(T.must(parameters_node.keyword_rest).name)
             end
           end
-          result << T.must(T.must(parameters_node.block).name) if parameters_node.block
+
+          if parameters_node.block
+            block = T.must(parameters_node.block)
+            result << if block.name
+              T.must(block.name)
+            else
+              :""
+            end
+          end
           result
         end
       end
