@@ -4511,22 +4511,22 @@ module YARP
   #           ^^^^^^^
   #     end
   class ParametersNode < Node
-    sig { returns(T::Array[Node]) }
+    sig { returns(T::Array[RequiredParameterNode]) }
     attr_reader :requireds
 
-    sig { returns(T::Array[Node]) }
+    sig { returns(T::Array[OptionalParameterNode]) }
     attr_reader :optionals
 
     sig { returns(T.nilable(RestParameterNode)) }
     attr_reader :rest
 
-    sig { returns(T::Array[Node]) }
+    sig { returns(T::Array[RequiredParameterNode]) }
     attr_reader :posts
 
-    sig { returns(T::Array[Node]) }
+    sig { returns(T::Array[KeywordParameterNode]) }
     attr_reader :keywords
 
-    sig { returns(T.nilable(Node)) }
+    sig { returns(T.nilable(KeywordRestParameterNode)) }
     attr_reader :keyword_rest
 
     sig { returns(T.nilable(BlockParameterNode)) }

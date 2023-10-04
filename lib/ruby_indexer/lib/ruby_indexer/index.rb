@@ -299,9 +299,9 @@ module RubyIndexer
           super(name, file_path, location, comments)
           if parameters_node
             @parameters = T.let(list_params(parameters_node), T::Array[Symbol])
-            @arity = T.let(arity(parameters_node), T::Range[Integer])
+            @arity = T.let(arity(parameters_node), T::Range[T.any(Float, Integer)])
           else
-            @arity = 0
+            @arity = 0..0
           end
         end
 
@@ -312,7 +312,7 @@ module RubyIndexer
 
         private
 
-        sig { params(parameters_node: YARP::ParametersNode).returns(T::Range[Integer]) }
+        sig { params(parameters_node: YARP::ParametersNode).returns(T::Range[T.any(Float, Integer)]) }
         def arity(parameters_node)
           optional_keywords, required_keywords = parameters_node.keywords.partition(&:value)
           minimum_params = parameters_node.requireds.length + parameters_node.posts.length + required_keywords.length
@@ -329,9 +329,9 @@ module RubyIndexer
           result = parameters_node.requireds.map(&:name) + parameters_node.optionals.map(&:name)
           result += parameters_node.posts.map(&:name) if parameters_node.posts
           result += parameters_node.keywords.map(&:name) if parameters_node.keywords
-          result << T.must(parameters_node.rest).name if parameters_node.rest
-          result << T.must(parameters_node.keyword_rest).name if parameters_node.keyword_rest
-          result << T.must(parameters_node.block).name if parameters_node.block
+          result << T.must(T.must(parameters_node.rest).name) if parameters_node.rest
+          result << T.must(T.must(parameters_node.keyword_rest).name) if parameters_node.keyword_rest
+          result << T.must(T.must(parameters_node.block).name) if parameters_node.block
           result
         end
       end
