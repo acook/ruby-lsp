@@ -330,7 +330,11 @@ module RubyIndexer
           result += parameters_node.posts.map(&:name) if parameters_node.posts
           result += parameters_node.keywords.map(&:name) if parameters_node.keywords
           result << T.must(T.must(parameters_node.rest).name) if parameters_node.rest&.name
-          result << T.must(T.must(parameters_node.keyword_rest).name) if parameters_node.keyword_rest&.name
+          if parameters_node.keyword_rest.is_a?(YARP::ForwardingParameterNode)
+            result << :"..."
+          elsif parameters_node.keyword_rest&.name
+            result << T.must(T.must(parameters_node.keyword_rest).name)
+          end
           result << T.must(T.must(parameters_node.block).name) if parameters_node.block
           result
         end

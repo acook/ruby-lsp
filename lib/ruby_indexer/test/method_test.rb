@@ -128,5 +128,21 @@ module RubyIndexer
       assert(entry.accepts_arity?(1))
       refute(entry.accepts_arity?(2))
     end
+
+    def test_method_with_forwarding
+      index(<<~RUBY)
+        class Foo
+          def bar(...)
+          end
+        end
+      RUBY
+
+      assert_entry("bar", Index::Entry::Method, "/fake/path/foo.rb:1-2:2-5")
+      entry = T.must(@index["bar"].first)
+      assert_equal([:"..."], entry.parameters)
+      assert(entry.accepts_arity?(0))
+      assert(entry.accepts_arity?(1))
+      assert(entry.accepts_arity?(99))
+    end
   end
 end
