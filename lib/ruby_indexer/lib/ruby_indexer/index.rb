@@ -265,6 +265,8 @@ module RubyIndexer
       end
 
       class Namespace < Entry
+        extend T::Sig
+
         sig { returns(String) }
         def short_name
           T.must(@name.split("::").last)
@@ -275,6 +277,25 @@ module RubyIndexer
       end
 
       class Class < Namespace
+        extend T::Sig
+
+        # The unresolved name of the parent class
+        sig { returns(String) }
+        attr_reader :parent_class
+
+        sig do
+          params(
+            name: String,
+            file_path: String,
+            location: YARP::Location,
+            comments: T::Array[String],
+            parent_class: T.nilable(String),
+          ).void
+        end
+        def initialize(name, file_path, location, comments, parent_class)
+          super(name, file_path, location, comments)
+          @parent_class = T.let(parent_class || "Object", String)
+        end
       end
 
       class Constant < Entry

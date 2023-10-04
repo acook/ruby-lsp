@@ -32,9 +32,9 @@ module RubyIndexer
       when YARP::ProgramNode, YARP::StatementsNode
         visit_child_nodes(node)
       when YARP::ClassNode
-        add_index_entry(node, Index::Entry::Class)
+        add_class_entry(node)
       when YARP::ModuleNode
-        add_index_entry(node, Index::Entry::Module)
+        add_module_entry(node)
       when YARP::ConstantWriteNode, YARP::ConstantOrWriteNode
         name = fully_qualify_name(node.name.to_s)
         add_constant(node, name)
@@ -122,16 +122,33 @@ module RubyIndexer
       end
     end
 
-    sig { params(node: T.any(YARP::ClassNode, YARP::ModuleNode), klass: T.class_of(Index::Entry)).void }
-    def add_index_entry(node, klass)
+    sig { params(node: YARP::ModuleNode).void }
+    def add_module_entry(node)
       name = node.constant_path.location.slice
-
-      unless /^[A-Z:]/.match?(name)
-        return visit_child_nodes(node)
-      end
+      return visit_child_nodes(node) unless /^[A-Z:]/.match?(name)
 
       comments = collect_comments(node)
-      @index << klass.new(fully_qualify_name(name), @file_path, node.location, comments)
+
+      @index << Index::Entry::Module.new(fully_qualify_name(name), @file_path, node.location, comments)
+      @stack << name
+      visit_child_nodes(node)
+      @stack.pop
+    end
+
+    sig { params(node: YARP::ClassNode).void }
+    def add_class_entry(node)
+      name = node.constant_path.location.slice
+      return visit_child_nodes(node) unless /^[A-Z:]/.match?(name)
+
+      comments = collect_comments(node)
+
+      superclass = node.superclass
+      parent_class = case superclass
+      when YARP::ConstantReadNode, YARP::ConstantPathNode
+        superclass.slice
+      end
+
+      @index << Index::Entry::Class.new(fully_qualify_name(name), @file_path, node.location, comments, parent_class)
       @stack << name
       visit_child_nodes(node)
       @stack.pop
